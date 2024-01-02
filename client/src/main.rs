@@ -1,10 +1,10 @@
 use std::{thread, time::Duration, net::TcpStream, io::{Read, self, Result}, fs};
 use chrono::offset::Local;
 
-const PING_SEC_FREQUENCY: u64 = 5;
+const PING_SEC_FREQUENCY: i8 = 5;
 
 fn main() -> io::Result<()> {
-    let ping_frequency = Duration::from_secs(PING_SEC_FREQUENCY);
+    let ping_frequency = Duration::from_secs(PING_SEC_FREQUENCY as u64);
     loop {
         let attempted_server_connection = TcpStream::connect("67.8.144.213:3523");
         if let Ok(mut connection) = attempted_server_connection {

@@ -16,7 +16,7 @@ fn send_bun_to_clients(image_path: &str) -> Result<()> {
     let mut file_buffer = Vec::new();
     send_file.read_to_end(&mut file_buffer)?;
 
-    let listener = TcpListener::bind("127.0.0.1:3523")?;
+    let listener = TcpListener::bind("192.168.0.152:3523")?;
     for mut stream in listener.incoming().flatten() {
         dbg!(&stream);
         stream.write_all(&file_buffer.clone())?;

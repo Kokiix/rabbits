@@ -1,6 +1,7 @@
 use std::{net::TcpListener, fs::File, io::{Read, Write, Result, self}, time::Duration, thread};
 
-const PING_SEC_FREQUENCY: i8 = 5;
+const PING_MS_FREQ: u64 = 5500;
+const LISTENER_FREQ: u64 = PING_MS_FREQ / 5;
 
 fn main() -> io::Result<()> {
     // let path_as_argument = std::env::args()
@@ -10,7 +11,7 @@ fn main() -> io::Result<()> {
     // send_bun_to_clients(&path_as_argument)
 
     // TEST
-    send_bun_to_clients("test/dumpling.jpg")
+    send_bun_to_clients("test/mochi.png")
 }
 
 fn send_bun_to_clients(image_path: &str) -> Result<()> {
@@ -21,10 +22,10 @@ fn send_bun_to_clients(image_path: &str) -> Result<()> {
     let listener = TcpListener::bind("192.168.0.152:3523")?;
     listener.set_nonblocking(true)?;
 
-    let mut seconds_to_timeout: i8 = 0;
+    let mut ms_to_timeout: u64 = 0;
 
     for potential_connection in listener.incoming() {
-        if seconds_to_timeout == PING_SEC_FREQUENCY {
+        if ms_to_timeout == PING_MS_FREQ {
             break;
         }
 
@@ -32,12 +33,13 @@ fn send_bun_to_clients(image_path: &str) -> Result<()> {
             dbg!(&connection);
             connection.write_all(&file_buffer.clone())?;
             connection.flush()?;
-        };
+        } else {
+            ms_to_timeout += LISTENER_FREQ;
+        }
 
-        seconds_to_timeout += 1;
-        dbg!(seconds_to_timeout);
+        dbg!(ms_to_timeout);
 
-        thread::sleep(Duration::from_secs(1));
+        thread::sleep(Duration::from_millis(LISTENER_FREQ));
     }
 
     Ok(())

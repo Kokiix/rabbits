@@ -7,19 +7,19 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'server'",
+            "name": "server",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=server",
-                    "--package=server"
+                    "--bin=rabbits",
+                    "--package=rabbits"
                 ],
                 "filter": {
-                    "name": "server",
+                    "name": "rabbits",
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "args": ["test/dumpling.png"],
             "cwd": "${workspaceFolder}"
         },
         {

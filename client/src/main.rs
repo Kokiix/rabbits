@@ -1,8 +1,9 @@
-use std::{thread, time::Duration, net::{TcpStream, SocketAddr, SocketAddrV4, Ipv4Addr}, io::{Read, self, Result}, fs};
+#![windows_subsystem = "windows"]
+use std::{thread, time::Duration, net::{TcpStream, SocketAddr, SocketAddrV4, Ipv4Addr}, io::{Read, Result}, fs};
 use chrono::offset::Local;
-use cushy::{PendingApp, kludgine::{figures::{units::UPx, Size}, app::winit::window::Fullscreen, image::io::Reader, wgpu::FilterMode, LazyTexture}, widgets::{image::Image, Resize, self}, Run, widget::{MakeWidget, WidgetInstance}, window::Window, Open, Application};
+use cushy::{PendingApp, kludgine::{figures::{units::UPx, Size}, app::winit::window::Fullscreen, image::io::Reader, wgpu::FilterMode, LazyTexture}, widgets::{self}, Run, widget::{MakeWidget, WidgetInstance}, window::Window, Open, Application};
 
-const PING_FREQ_MS: Duration = Duration::from_millis(1000);
+const PING_FREQ_MS: Duration = Duration::from_millis(5000);
 const SERVER_IP: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(67, 8, 144, 213), 3523));
 
 fn main() {
@@ -12,7 +13,7 @@ fn main() {
     thread::spawn(move || {
         dbg!("thread open");
         loop {
-            let attempted_server_connection = TcpStream::connect_timeout(&SERVER_IP, Duration::from_millis(500));
+            let attempted_server_connection = TcpStream::connect_timeout(&SERVER_IP, Duration::from_millis(100));
             dbg!("attempting server connect");
             if let Ok(mut connection) = attempted_server_connection {
                 let mut file_buffer = Vec::new();

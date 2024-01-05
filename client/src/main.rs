@@ -1,54 +1,96 @@
+// Attribute to run program without popup console
 #![windows_subsystem = "windows"]
-use std::{thread, time::Duration, net::{TcpStream, SocketAddr, SocketAddrV4, Ipv4Addr}, io::{Read, Result}, fs};
+
 use chrono::offset::Local;
-use cushy::{PendingApp, kludgine::{figures::{units::UPx, Size}, app::winit::window::Fullscreen, image::io::Reader, wgpu::FilterMode, LazyTexture}, widgets::{self}, Run, widget::{MakeWidget, WidgetInstance}, window::Window, Open, Application};
+use std::{
+    thread, 
+    time::Duration, 
+    net::{TcpStream, SocketAddr, SocketAddrV4, Ipv4Addr}, 
+    io::{Read, Result, self}, 
+    fs
+};
+use cushy::{
+    kludgine::{
+        figures::{units::UPx, Size}, 
+        app::winit::window::Fullscreen, 
+        image::io::Reader, 
+        wgpu::FilterMode, 
+        LazyTexture
+    }, 
+    widgets::{self}, 
+    widget::{MakeWidget, WidgetInstance}, 
+    window::Window, 
+    PendingApp, 
+    Application, 
+    Open, 
+    App,
+    Run, 
+};
 
 const PING_FREQ_MS: Duration = Duration::from_millis(5000);
-const SERVER_IP: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(67, 8, 144, 213), 3523));
+const SERVER_IP: SocketAddr = SocketAddr::V4(
+    SocketAddrV4::new(
+        Ipv4Addr::new(67, 8, 144, 213), 
+        3523
+    )
+);
 
-fn main() {
+fn main() -> cushy::Result<()> {
     let app = PendingApp::default();
     let app_handle = app.as_app();
+    create_hidden_window().open(&app)?;
 
     thread::spawn(move || {
-        dbg!("thread open");
         loop {
             let attempted_server_connection = TcpStream::connect_timeout(&SERVER_IP, Duration::from_millis(100));
-            dbg!("attempting server connect");
-            if let Ok(mut connection) = attempted_server_connection {
-                let mut file_buffer = Vec::new();
-                connection.read_to_end(&mut file_buffer).expect("uh oh");
-
-                let downloaded_file_path = write_to_file(file_buffer).unwrap();
-                create_bun_window(&downloaded_file_path).open(&app_handle).expect("msg");
-                thread::sleep(PING_FREQ_MS);
+            dbg!("try connect");
+            if let Ok(connection) = attempted_server_connection {
+                read_connection(connection, &app_handle).unwrap();
             }
 
             thread::sleep(PING_FREQ_MS);
         }
     });
 
-    create_hidden_window().open(&app).expect("why");
-    app.run().expect("p");
+    app.run()?;
+    Ok(())
 }
 
-// This is a workaround:
-// Without this window, Cushy shuts the program down whenever the last remaining window (bun_window) is closed
+// Workaround to keep the program alive after image window is closed
 fn create_hidden_window() -> Window<WidgetInstance> {
     let mut empty_window = widgets::Space::default().into_window();
     empty_window.attributes.visible = false;
     empty_window
 }
 
-fn create_bun_window(file: &str) -> Window<WidgetInstance> {
-    let bun_image = Reader::open(file).expect("placehodler 1").decode().expect("pacehoder 2");
-    let bun_texture = LazyTexture::from_image(bun_image, FilterMode::Linear);
+fn read_connection(mut connection: TcpStream, app_handle: &App) -> io::Result<()> {
+    let mut file_buffer = Vec::new();
+    connection.read_to_end(&mut file_buffer)?;
+
+    if !file_buffer.is_empty() {
+        let file_path = write_to_file(file_buffer)?;
+        create_bun_window(file_path)
+        .open(app_handle)
+        .expect("opening window");
+    }
+
+    thread::sleep(PING_FREQ_MS);
+    Ok(())
+}
+
+fn create_bun_window(file: String) -> Window<WidgetInstance> {
+    let bun_texture = LazyTexture::from_image(
+        Reader::open(file).expect("opening file").decode().expect("decoding image"),
+        FilterMode::Linear
+    );
 
     let dimensions = bun_texture.size();
     let image_scaling = scale_img_from(dimensions);
 
-    let bun_widget = widgets::Image::new(bun_texture).scaled(image_scaling).centered();
-    let mut bun_window = bun_widget.into_window();
+    let mut bun_window = widgets::Image::new(bun_texture)
+    .scaled(image_scaling)
+    .centered()
+    .into_window();
     bun_window.attributes.fullscreen = Some(Fullscreen::Borderless(None));
     bun_window
 }
@@ -56,14 +98,26 @@ fn create_bun_window(file: &str) -> Window<WidgetInstance> {
 fn write_to_file(file_buffer: Vec<u8>) -> Result<String> {
     let time_of_read = Local::now().naive_local().format("%Y_%m_%d--%H_%M");
     let file_name = format!("rabbitdl-{time_of_read}.png");
+    let [dir_path, file_path] = create_path_per_os(file_name);
 
-    let dir_path = "C:\\ProgramData\\Rabbits";
-    let file_path = format!("{dir_path}\\{file_name}");
-
-    fs::create_dir(dir_path); // ignore err when dir exists
+    fs::create_dir(dir_path); // ignore err produced when dir already exists
     fs::write(&file_path, file_buffer)?;
 
     Ok(file_path)
+}
+
+#[cfg(target_family = "windows")]
+fn create_path_per_os(file_name: String) -> [String; 2] {
+    let dir_path = String::from("C:\\ProgramData\\Rabbits");
+    let file_path = format!("{dir_path}\\{file_name}");
+    [dir_path, file_path]
+}
+
+#[cfg(target_family = "unix")]
+fn create_path_per_os(file_name: String) -> [String; 2] {
+    let dir_path = String::from("~/.rabbits");
+    let file_path = format!("{dir_path}/{file_name}");
+    [dir_path, file_path]
 }
 
 fn scale_img_from(dimensions: Size<UPx>) -> f32 {

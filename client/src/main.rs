@@ -1,5 +1,5 @@
-// Attribute to run program without popup console
-#![windows_subsystem = "windows"]
+// Attribute to run without popup console
+// #![windows_subsystem = "windows"]
 
 use chrono::offset::Local;
 use std::{
@@ -12,7 +12,7 @@ use std::{
 use cushy::{
     kludgine::{
         figures::{units::UPx, Size}, 
-        app::winit::window::Fullscreen, 
+        app::{winit::window::Fullscreen, WindowAttributes}, 
         image::io::Reader, 
         wgpu::FilterMode, 
         LazyTexture
@@ -59,7 +59,9 @@ fn main() -> cushy::Result<()> {
 // Workaround to keep the program alive after image window is closed
 fn create_hidden_window() -> Window<WidgetInstance> {
     let mut empty_window = widgets::Space::default().into_window();
+    empty_window.attributes = WindowAttributes::default();
     empty_window.attributes.visible = false;
+    dbg!(empty_window.attributes.max_inner_size);
     empty_window
 }
 
@@ -100,7 +102,7 @@ fn write_to_file(file_buffer: Vec<u8>) -> Result<String> {
     let file_name = format!("rabbitdl-{time_of_read}.png");
     let [dir_path, file_path] = create_path_per_os(file_name);
 
-    fs::create_dir(dir_path); // ignore err produced when dir already exists
+    fs::create_dir_all(dir_path); // ignore err produced when dir already exists
     fs::write(&file_path, file_buffer)?;
 
     Ok(file_path)

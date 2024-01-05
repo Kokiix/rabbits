@@ -16,10 +16,10 @@ const PING_FREQ_MS: u64 = 5000;
 const LISTENER_FREQ_MS: u64 = 5;
 const CLI_USAGE: &str = "RABBITS: Rapid Automated BunBun Image Transmission System
 \nUsage:
-rabbits -p --ping-clients
+rabbits ping
 rabbits <file>
 \nOptions:
--c --count-clients     count the number of active clients\n\n";
+-p  --ping-clients  continuously scan for online clients\n\n";
 
 fn main() {
     customize_panic_message();

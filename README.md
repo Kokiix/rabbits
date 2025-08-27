@@ -1,4 +1,4 @@
-# Rapid Automated BunBun Image Transmission System
+# Rapid Automated Bun Image Transmission System
 Intrusively display an image on a client screen from commandline using "rabbits <image>". Port 3523 needs to be exposed, local ip is hardcoded.
 
 ## Dependencies

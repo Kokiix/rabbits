@@ -2,7 +2,7 @@
 Intrusively display an image on a client screen from commandline using "rabbits <image>". Port 3523 needs to be exposed, local ip is hardcoded.
 My first experiment with Rust. "complete" Jan 2024
 
-![20250614_182457](https://github.com/user-attachments/assets/7dbf6123-ca37-4b62-9e76-c21aa0876f0f)
+<img src="https://github.com/user-attachments/assets/7dbf6123-ca37-4b62-9e76-c21aa0876f0f" height="200">
 ![IMG-20250828-WA0000](https://github.com/user-attachments/assets/cc5279b5-f685-40ac-abc8-7d998565c897)
 
 
